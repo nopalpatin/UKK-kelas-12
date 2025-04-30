@@ -1,0 +1,128 @@
+---
+- hosts: wordpress
+  become: true
+  become_method: sudo
+  vars:
+    wp_db_name: wordpress
+    wp_db_user: wordpress
+    wp_db_pass: wordpress
+    mysql_root_password: "root"  # Fixed indentation and added quotes
+
+  tasks:
+    - name: Install apache2
+      apt:
+        name: apache2
+        state: present
+        force: yes
+        update_cache: yes
+
+    - name: Install mysql server
+      apt:
+        name: mysql-server
+        state: present
+        force: yes
+        update_cache: yes
+
+    - name: Install python mysql dependencies
+      apt:
+        name: python3-pymysql
+        state: present
+
+    - name: Set MySQL root password
+      command: mysql -u root -e 'ALTER USER "root"@"localhost" IDENTIFIED WITH mysql_native_password BY "{{ mysql_root_password }}";'
+      when: mysql_root_password is defined
+      ignore_errors: true
+
+    - name: Create wordpress database
+      mysql_db:
+        name: "{{ wp_db_name}}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Create mysql wordpress user
+      mysql_user:
+      name: "{{ wp_db_user }}"
+      password: "{{ wp_db_pass }}"
+      priv: "{{ wp_db_name }}.*:ALL"
+      host: localhost
+      state: present
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+
+    - name: Install php8.3
+      apt:
+        name:
+          "php8.3"
+          "php8.3-fpm"
+          "php8.3-mbstring"
+          "php-pear"
+          "php8.3-fpm"
+          "php-common"
+          "php-gd"
+          "php-mysql"
+          "php-enchant"
+          "hunspell"
+
+      state: present
+      force: yes
+      update_cache: yes
+
+    - name: set php-fpm
+      command: "a2enmod proxy_fcgi setenvif && a2enconfphp8.3-fpm"
+      notify:
+        - restart apache2
+        - restart php-fpm
+      ignore_errors: yes
+
+    - name: Download wordpress
+      get_url:
+        url: "https://wordpress.org/latest.tar.gz"
+        dest: "/var/www/wordpress.tar.gz"
+        mode: 0644
+    - name: Extract wordpress
+      unarchive:
+        src: "/var/www/wordpress.tar.gz"
+        dest: "/var/www/"
+        remote_src: yes
+        mode: 0755
+        owner: www-data
+        group: www-data
+
+    - name: Clean up tar file
+      file:
+        path: "/var/www/wordpress.tar.gz"
+        state: absent
+        
+    - name: backup default sites available
+      command: cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/000-default.conf.backup
+
+    - name: Update Apache VirtualHost for WordPress
+      replace:
+        path: /etc/apache2/sites-available/000-default.conf
+        regexp: 'DocumentRoot /var/www/html'
+        replace: 'DocumentRoot /var/www/wordpress'
+      notify: restart apache2
+
+handlers:
+  - name: restart apache2
+    service:
+      name: apache2
+      state: restarted
+
+  - name: reload apache2
+    service:
+    name: apache2
+    state: reloaded
+
+  - name: restart apache2
+    service:
+      name: apache2
+      state: restarted
+
+  - name: restart php-fpm
+    service:
+      name: php8.3-fpm
+      state: restarted
+      
+    
