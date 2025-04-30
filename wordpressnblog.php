@@ -83,6 +83,7 @@
 
 - hosts: blog
   become: yes
+
   tasks:
     - name: Update package repository
       apt:
