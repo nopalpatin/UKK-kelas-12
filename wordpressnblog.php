@@ -113,7 +113,7 @@ task:
 
 
 
-  - name Create blog database
+  - name: Create blog database
     mysql_db:
       name: "{{ db_name }}"
       state: present
