@@ -1,7 +1,7 @@
 if (isset($_POST['submit'])) {
     $username = mysqli_real_escape_string($conn, $_POST['username']);
     $password = mysqli_real_escape_string($conn, $_POST['password']);
-        $login $conn->prepare("SELECT * FROM user WHERE password = ? AND username = ? ");
+        $login = $conn->prepare("SELECT * FROM user WHERE password = ? AND username = ? ");
         $login->bind_param('ss', $password, $username);
         $login->execute();
         $result = $login->get_result();
