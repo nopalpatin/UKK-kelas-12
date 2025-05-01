@@ -1,0 +1,15 @@
+if (isset($_POST['submit'])) {
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $password mysqli_real_escape_string($conn, S POST['password']);
+        $login Sconn->prepare("SELECT * FROM user WHERE password? AND username = ? ");
+        $login->bind_param('ss', Spassword, Susername);
+        $login->execute();
+        $result = $login->get_result();
+        if ($result->num_rows == 0) {
+                die("Username atau password salah!");
+        } else {
+                $_SESSION['admin'] = 1;
+                header("Location: admin.php");
+        }
+
+}
